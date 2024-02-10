@@ -14,42 +14,32 @@
 #include <numbers>
 #include <frc/Preferences.h>
 
-inline constexpr std::string_view motorPercentagePowerKey = "Right Motor Percentage Power";
-double motorPercentagePower;
+inline constexpr std::string_view FeedSpeedKey = "Feed Speed";
+double FeedSpeed;
+inline constexpr std::string_view ShooterSpeedKey = "Shooter Speed";
+double ShooterSpeed;
 
-/**
- * This sample program shows how to control a motor using a joystick. In the
- * operator control part of the program, the joystick is read and the value is
- * written to the motor.
- *
- * Joystick analog values range from -1 to 1 and motor controller inputs as
- * range from -1 to 1 making it easy to work together.
- *
- * In addition, the encoder value of an encoder connected to ports 0 and 1 is
- * consistently sent to the Dashboard.
- */
 class Robot : public frc::TimedRobot
 {
 public:
   void RobotInit() override
   {
-    //Robot::CreateFloatPreferenceKey(rightMotorPercentagePowerKey, 0.5);
-    //Robot::CreateFloatPreferenceKey(leftMotorPercentagePowerKey, -0.5);
+    // Robot::CreateFloatPreferenceKey(rightMotorPercentagePowerKey, 0.5);
+    // Robot::CreateFloatPreferenceKey(leftMotorPercentagePowerKey, -0.5);
 
-    frc::Preferences::InitDouble(motorPercentagePowerKey, motorPercentagePower);
-
+    frc::Preferences::InitDouble(FeedSpeedKey, FeedSpeed);
+    frc::Preferences::InitDouble(ShooterSpeedKey, ShooterSpeed);
   }
 
-  void TeleopInit() override{
-    
-
+  void TeleopInit() override
+  {
   }
 
   void TeleopPeriodic() override
   {
 
-    double rightMotorPower = frc::Preferences::GetDouble(motorPercentagePowerKey);
-    double leftMotorPower = -rightMotorPower;
+    double feedMotorPower = frc::Preferences::GetDouble(FeedSpeedKey);
+    double shooterMotorPower = frc::Preferences::GetDouble(ShooterSpeedKey);
 
     // double rightMotorPower = (m_stick.GetThrottle());
     // double leftMotorPower = -rightMotorPower;
@@ -60,20 +50,41 @@ public:
     if (start)
     {
 
-      m_rightMotor.Set(ControlMode::PercentOutput, rightMotorPower);
-      m_leftMotor.Set(ControlMode::PercentOutput, leftMotorPower);
+      m_feedMotor.Set(ControlMode::PercentOutput, FeedSpeed);
+      m_shooterMotor.Set(ControlMode::PercentOutput, ShooterSpeed);
     }
     else if (stop)
     {
-      m_rightMotor.Set(ControlMode::PercentOutput, 0);
-      m_leftMotor.Set(ControlMode::PercentOutput, 0);
+      m_feedMotor.Set(ControlMode::PercentOutput, 0);
+      m_shooterMotor.Set(ControlMode::PercentOutput, 0);
     }
+    // FeedSpeed Button Bindings
+    if (m_stick.GetRawButtonPressed(7))
+      feedMotorPower += 0.1;
+      frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    if (m_stick.GetRawButtonPressed(8))
+      feedMotorPower -= 0.1;
+     frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    if (m_stick.GetRawButtonPressed(9))
+      feedMotorPower += 0.01;
+      frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    if (m_stick.GetRawButtonPressed(10))
+      feedMotorPower -= 0.01;
+     frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
 
-
-    if (m_stick.GetRawButtonPressed(7)) motorPercentagePower+=0.1;
-    if (m_stick.GetRawButtonPressed(7)) motorPercentagePower-=0.1;
-    if (m_stick.GetRawButtonPressed(7)) motorPercentagePower+=0.01;
-    if (m_stick.GetRawButtonPressed(7)) motorPercentagePower-=0.01;
+    //ShooterSpeed Button Bindings
+        if (m_stick.GetRawButtonPressed(5))
+      shooterMotorPower += 0.1;
+      frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    if (m_stick.GetRawButtonPressed(6))
+      shooterMotorPower -= 0.1;
+     frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    if (m_stick.GetRawButtonPressed(3))
+      shooterMotorPower += 0.01;
+      frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    if (m_stick.GetRawButtonPressed(4))
+      shooterMotorPower -= 0.01;
+     frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
   }
 
   /*
@@ -92,13 +103,12 @@ public:
   }
 
 private:
-
   void CreateDoublePreferenceKey(std::string_view KeyName,
-                                double DefaultFloatKeyValue);
+                                 double DefaultDoubleKeyValue);
 
   frc::Joystick m_stick{0};
-  TalonFX m_leftMotor{3};
-  TalonFX m_rightMotor{4};
+  TalonFX m_feedMotor{3};
+  TalonFX m_shooterMotor{4};
 
   static constexpr int kStartButton = 1;
   static constexpr int kStopButton = 12;
