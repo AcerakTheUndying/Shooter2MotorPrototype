@@ -14,8 +14,7 @@
 #include <numbers>
 #include <frc/Preferences.h>
 
-constexpr std::string_view rightMotorPercentagePowerKey = "Right Motor Percentage Power";
-constexpr std::string_view leftMotorPercentagePowerKey = "Left Motor Percentage Power";
+inline constexpr std::string_view rightMotorPercentagePowerKey = "Right Motor Percentage Power";
 
 /**
  * This sample program shows how to control a motor using a joystick. In the
@@ -33,15 +32,18 @@ class Robot : public frc::TimedRobot
 public:
   void RobotInit() override
   {
-    Robot::CreateFloatPreferenceKey(leftMotorPercentagePowerKey, -0.5);
-    Robot::CreateFloatPreferenceKey(rightMotorPercentagePowerKey, 0.5);
+    //Robot::CreateFloatPreferenceKey(rightMotorPercentagePowerKey, 0.5);
+    //Robot::CreateFloatPreferenceKey(leftMotorPercentagePowerKey, -0.5);
+
+    frc::Preferences::InitDouble(rightMotorPercentagePowerKey, 0.5);
+
   }
 
   void TeleopPeriodic() override
   {
 
-    double rightMotorPower = frc::Preferences::GetFloat(rightMotorPercentagePowerKey);
-    double leftMotorPower = frc::Preferences::GetFloat(leftMotorPercentagePowerKey);
+    double rightMotorPower = frc::Preferences::GetDouble(rightMotorPercentagePowerKey);
+    double leftMotorPower = -rightMotorPower;
 
     // double rightMotorPower = (m_stick.GetThrottle());
     // double leftMotorPower = -rightMotorPower;
@@ -69,20 +71,22 @@ public:
   void RobotPeriodic() override
   {
   }
-  void Robot::CreateFloatPreferenceKey(std::string_view KeyName, int DefaultKeyValue)
+  void CreateDoublePreferenceKey(std::string_view KeyName, int DefaultKeyValue)
   {
     if (!frc::Preferences::ContainsKey(KeyName)) // Check if it doesn't already exit
     {
-      frc::Preferences::InitInt(KeyName, DefaultKeyValue); // Create it and set to value if it doesn't exit
+      frc::Preferences::InitDouble(KeyName, DefaultKeyValue); // Create it and set to value if it doesn't exit
     }
   }
 
 private:
-  void CreateFloatPreferenceKey(std::string_view KeyName,
+
+  void CreateDoublePreferenceKey(std::string_view KeyName,
                                 double DefaultFloatKeyValue);
+
   frc::Joystick m_stick{0};
-  TalonFX m_leftMotor{0};
-  TalonFX m_rightMotor{1};
+  TalonFX m_leftMotor{3};
+  TalonFX m_rightMotor{4};
 
   static constexpr int kStartButton = 1;
   static constexpr int kStopButton = 12;
