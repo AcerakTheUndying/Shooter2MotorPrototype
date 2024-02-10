@@ -44,47 +44,47 @@ public:
     // double rightMotorPower = (m_stick.GetThrottle());
     // double leftMotorPower = -rightMotorPower;
 
-    bool start = m_stick.GetRawButton(kStartButton);
-    bool stop = m_stick.GetRawButton(kStopButton);
+    bool startFeed = m_stick.GetRawButton(kStartFeedButton);
+    bool stopFeed = m_stick.GetRawButton(kStopFeedButton);
+    bool startShooter = m_stick.GetRawButton(kStartShooterButton);
+    bool stopShooter = m_stick.GetRawButton(kStopShooterButton);
 
-    if (start)
-    {
-
+    if (startFeed)
       m_feedMotor.Set(ControlMode::PercentOutput, FeedSpeed);
-      m_shooterMotor.Set(ControlMode::PercentOutput, ShooterSpeed);
-    }
-    else if (stop)
-    {
+    if (stopFeed)
       m_feedMotor.Set(ControlMode::PercentOutput, 0);
+    if (startShooter)
+      m_shooterMotor.Set(ControlMode::PercentOutput, ShooterSpeed);
+    if (stopShooter)
       m_shooterMotor.Set(ControlMode::PercentOutput, 0);
-    }
+
     // FeedSpeed Button Bindings
     if (m_stick.GetRawButtonPressed(7))
       feedMotorPower += 0.1;
-      frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
     if (m_stick.GetRawButtonPressed(8))
       feedMotorPower -= 0.1;
-     frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
     if (m_stick.GetRawButtonPressed(9))
       feedMotorPower += 0.01;
-      frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
     if (m_stick.GetRawButtonPressed(10))
       feedMotorPower -= 0.01;
-     frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
 
-    //ShooterSpeed Button Bindings
-        if (m_stick.GetRawButtonPressed(5))
+    // ShooterSpeed Button Bindings
+    if (m_stick.GetRawButtonPressed(5))
       shooterMotorPower += 0.1;
-      frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
     if (m_stick.GetRawButtonPressed(6))
       shooterMotorPower -= 0.1;
-     frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
     if (m_stick.GetRawButtonPressed(3))
       shooterMotorPower += 0.01;
-      frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
     if (m_stick.GetRawButtonPressed(4))
       shooterMotorPower -= 0.01;
-     frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
   }
 
   /*
@@ -92,8 +92,8 @@ public:
    * robot mode.
    */
   void RobotPeriodic() override
-  {
-  }
+  {}
+  
   void CreateDoublePreferenceKey(std::string_view KeyName, int DefaultKeyValue)
   {
     if (!frc::Preferences::ContainsKey(KeyName)) // Check if it doesn't already exit
@@ -110,8 +110,10 @@ private:
   TalonFX m_feedMotor{3};
   TalonFX m_shooterMotor{4};
 
-  static constexpr int kStartButton = 1;
-  static constexpr int kStopButton = 12;
+  static constexpr int kStartFeedButton = 11;
+  static constexpr int kStopFeedButton = 12;
+  static constexpr int kStartShooterButton = 1;
+  static constexpr int kStopShooterButton = 2;
 };
 
 #ifndef RUNNING_FRC_TESTS
