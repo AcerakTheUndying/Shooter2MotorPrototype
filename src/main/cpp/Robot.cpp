@@ -14,7 +14,8 @@
 #include <numbers>
 #include <frc/Preferences.h>
 
-inline constexpr std::string_view rightMotorPercentagePowerKey = "Right Motor Percentage Power";
+inline constexpr std::string_view motorPercentagePowerKey = "Right Motor Percentage Power";
+double motorPercentagePower;
 
 /**
  * This sample program shows how to control a motor using a joystick. In the
@@ -35,14 +36,19 @@ public:
     //Robot::CreateFloatPreferenceKey(rightMotorPercentagePowerKey, 0.5);
     //Robot::CreateFloatPreferenceKey(leftMotorPercentagePowerKey, -0.5);
 
-    frc::Preferences::InitDouble(rightMotorPercentagePowerKey, 0.5);
+    frc::Preferences::InitDouble(motorPercentagePowerKey, motorPercentagePower);
+
+  }
+
+  void TeleopInit() override{
+    
 
   }
 
   void TeleopPeriodic() override
   {
 
-    double rightMotorPower = frc::Preferences::GetDouble(rightMotorPercentagePowerKey);
+    double rightMotorPower = frc::Preferences::GetDouble(motorPercentagePowerKey);
     double leftMotorPower = -rightMotorPower;
 
     // double rightMotorPower = (m_stick.GetThrottle());
@@ -62,6 +68,12 @@ public:
       m_rightMotor.Set(ControlMode::PercentOutput, 0);
       m_leftMotor.Set(ControlMode::PercentOutput, 0);
     }
+
+
+    if (m_stick.GetRawButtonPressed(7)) motorPercentagePower+=0.1;
+    if (m_stick.GetRawButtonPressed(7)) motorPercentagePower-=0.1;
+    if (m_stick.GetRawButtonPressed(7)) motorPercentagePower+=0.01;
+    if (m_stick.GetRawButtonPressed(7)) motorPercentagePower-=0.01;
   }
 
   /*
