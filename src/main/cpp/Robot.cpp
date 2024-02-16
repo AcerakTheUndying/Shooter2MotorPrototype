@@ -18,6 +18,8 @@ inline constexpr std::string_view FeedSpeedKey = "Feed Speed";
 double FeedSpeed;
 inline constexpr std::string_view ShooterSpeedKey = "Shooter Speed";
 double ShooterSpeed;
+inline constexpr std::string_view ElevatorPositionKey = "Elevator Position";
+double ElevatorPosition;
 
 class Robot : public frc::TimedRobot
 {
@@ -29,6 +31,8 @@ public:
 
     frc::Preferences::InitDouble(FeedSpeedKey, FeedSpeed);
     frc::Preferences::InitDouble(ShooterSpeedKey, ShooterSpeed);
+    frc::Preferences::InitDouble(ElevatorPositionKey, ElevatorPosition);
+
   }
 
   void TeleopInit() override
@@ -93,7 +97,7 @@ public:
    */
   void RobotPeriodic() override
   {}
-  
+
   void CreateDoublePreferenceKey(std::string_view KeyName, int DefaultKeyValue)
   {
     if (!frc::Preferences::ContainsKey(KeyName)) // Check if it doesn't already exit
@@ -107,13 +111,20 @@ private:
                                  double DefaultDoubleKeyValue);
 
   frc::Joystick m_stick{0};
-  TalonFX m_feedMotor{3};
-  TalonFX m_shooterMotor{4};
+
+  TalonFX m_shooterMotor{3};
+  TalonFX m_feedMotor{4};
+  TalonFX m_elevatorMotor{5};
 
   static constexpr int kStartFeedButton = 11;
   static constexpr int kStopFeedButton = 12;
   static constexpr int kStartShooterButton = 1;
   static constexpr int kStopShooterButton = 2;
+
+  const double kElevatorPositionBottom = -0.3; 
+  const double kElevatorPositionMiddle = 2.0;
+  const double kElevatorPositionTop = 3.6;
+
 };
 
 #ifndef RUNNING_FRC_TESTS
