@@ -54,11 +54,11 @@ public:
     bool stopShooter = m_stick.GetRawButton(kStopShooterButton);
 
     if (startFeed)
-      m_feedMotor.Set(ControlMode::PercentOutput, FeedSpeed);
+      m_feedMotor.Set(ControlMode::PercentOutput, feedMotorPower);
     if (stopFeed)
       m_feedMotor.Set(ControlMode::PercentOutput, 0);
     if (startShooter)
-      m_shooterMotor.Set(ControlMode::PercentOutput, ShooterSpeed);
+      m_shooterMotor.Set(ControlMode::PercentOutput, shooterMotorPower);
     if (stopShooter)
       m_shooterMotor.Set(ControlMode::PercentOutput, 0);
 
