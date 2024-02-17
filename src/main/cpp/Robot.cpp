@@ -9,21 +9,20 @@
 #include <frc/TimedRobot.h>
 #include <frc/motorcontrol/PWMSparkMax.h>
 #include <frc/smartdashboard/SmartDashboard.h>
-#include <ctre/Phoenix.h>
 #include <frc2/command/CommandPtr.h>
 #include <numbers>
 #include <frc/Preferences.h>
-#include <ctre/phoenix6/TalonFX.hpp>
 
+#include <ctre/phoenix6/TalonFX.hpp>
 #include <ctre/phoenix6/configs/Configs.hpp>
 #include <ctre/phoenix6/configs/Configurator.hpp>
 
 using namespace ctre::phoenix6;
 
 inline constexpr std::string_view FeedSpeedKey = "Feed Speed";
-double FeedSpeed;
+double FeedSpeed = 0.5;
 inline constexpr std::string_view ShooterSpeedKey = "Shooter Speed";
-double ShooterSpeed;
+double ShooterSpeed = 0.7;
 
 class Robot : public frc::TimedRobot
 {
@@ -69,14 +68,14 @@ public:
     bool elevator4 = m_stick.GetRawButton(kElevatorPositionButton4);
 
     if (startFeed)
-      m_feedMotor.Set(ControlMode::PercentOutput, feedMotorPower);
+      m_feedMotor.Set(feedMotorPower); 
     if (stopFeed)
-      m_feedMotor.Set(ControlMode::PercentOutput, 0);
+      m_feedMotor.Set(0);
 
     if (startShooter)
-      m_shooterMotor.Set(ControlMode::PercentOutput, shooterMotorPower);
+      m_shooterMotor.Set(shooterMotorPower);
     if (stopShooter)
-      m_shooterMotor.Set(ControlMode::PercentOutput, 0);
+      m_shooterMotor.Set(0);
 
     if (elevator1)
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition1).WithSlot(0));
@@ -127,9 +126,8 @@ private:
 
   frc::Joystick m_stick{0};
 
-  TalonFX m_shooterMotor{3};
-  TalonFX m_feedMotor{4};
-
+  ctre::phoenix6::hardware::TalonFX m_shooterMotor{3};  
+  ctre::phoenix6::hardware::TalonFX m_feedMotor{4};
   ctre::phoenix6::hardware::TalonFX m_elevatorMotor{5};
   ctre::phoenix6::controls::MotionMagicVoltage m_mmReq{0_tr};
 
