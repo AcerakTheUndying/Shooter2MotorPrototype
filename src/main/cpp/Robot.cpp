@@ -13,13 +13,17 @@
 #include <frc2/command/CommandPtr.h>
 #include <numbers>
 #include <frc/Preferences.h>
+#include <ctre/phoenix6/TalonFX.hpp>
+
+#include <ctre/phoenix6/configs/Configs.hpp>
+#include <ctre/phoenix6/configs/Configurator.hpp>
+
+using namespace ctre::phoenix6;
 
 inline constexpr std::string_view FeedSpeedKey = "Feed Speed";
 double FeedSpeed;
 inline constexpr std::string_view ShooterSpeedKey = "Shooter Speed";
 double ShooterSpeed;
-inline constexpr std::string_view ElevatorPositionKey = "Elevator Position";
-double ElevatorPosition;
 
 class Robot : public frc::TimedRobot
 {
@@ -31,13 +35,19 @@ public:
 
     frc::Preferences::InitDouble(FeedSpeedKey, FeedSpeed);
     frc::Preferences::InitDouble(ShooterSpeedKey, ShooterSpeed);
-    frc::Preferences::InitDouble(ElevatorPositionKey, ElevatorPosition);
 
+  configs::TalonFXConfiguration cfg{};
+
+  configs::MotionMagicConfigs &mm = cfg.MotionMagic;
+  mm.MotionMagicCruiseVelocity = 20; // 5 rotations per second cruise
+  mm.MotionMagicAcceleration = 20; // Take approximately 0.5 seconds to reach max vel
+
+  configs::Slot0Configs &slot0 = cfg.Slot0;
+  slot0.kP = 20;
   }
 
   void TeleopInit() override
-  {
-  }
+  {}
 
   void TeleopPeriodic() override
   {
@@ -53,28 +63,29 @@ public:
     bool startShooter = m_stick.GetRawButton(kStartShooterButton);
     bool stopShooter = m_stick.GetRawButton(kStopShooterButton);
 
+    bool elevator1 = m_stick.GetRawButton(kElevatorPositionButton1);
+    bool elevator2 = m_stick.GetRawButton(kElevatorPositionButton2);
+    bool elevator3 = m_stick.GetRawButton(kElevatorPositionButton3);
+    bool elevator4 = m_stick.GetRawButton(kElevatorPositionButton4);
+
     if (startFeed)
       m_feedMotor.Set(ControlMode::PercentOutput, feedMotorPower);
     if (stopFeed)
       m_feedMotor.Set(ControlMode::PercentOutput, 0);
+
     if (startShooter)
       m_shooterMotor.Set(ControlMode::PercentOutput, shooterMotorPower);
     if (stopShooter)
       m_shooterMotor.Set(ControlMode::PercentOutput, 0);
 
-    // FeedSpeed Button Bindings
-    if (m_stick.GetRawButtonPressed(7))
-      feedMotorPower += 0.1;
-    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
-    if (m_stick.GetRawButtonPressed(8))
-      feedMotorPower -= 0.1;
-    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
-    if (m_stick.GetRawButtonPressed(9))
-      feedMotorPower += 0.01;
-    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
-    if (m_stick.GetRawButtonPressed(10))
-      feedMotorPower -= 0.01;
-    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    if (elevator1)
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition1).WithSlot(0));
+    if (elevator2)
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition2).WithSlot(0));
+    if (elevator3)
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition3).WithSlot(0));
+    if (elevator4)
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition4).WithSlot(0));
 
     // ShooterSpeed Button Bindings
     if (m_stick.GetRawButtonPressed(5))
@@ -83,12 +94,16 @@ public:
     if (m_stick.GetRawButtonPressed(6))
       shooterMotorPower -= 0.1;
     frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+
+  //FeedSpeed Button Bindings
     if (m_stick.GetRawButtonPressed(3))
-      shooterMotorPower += 0.01;
-    frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+      feedMotorPower += 0.1;
+    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
     if (m_stick.GetRawButtonPressed(4))
-      shooterMotorPower -= 0.01;
-    frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+      feedMotorPower -= 0.1;
+    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+
+
   }
 
   /*
@@ -114,16 +129,25 @@ private:
 
   TalonFX m_shooterMotor{3};
   TalonFX m_feedMotor{4};
-  TalonFX m_elevatorMotor{5};
+
+  ctre::phoenix6::hardware::TalonFX m_elevatorMotor{5};
+  ctre::phoenix6::controls::MotionMagicVoltage m_mmReq{0_tr};
 
   static constexpr int kStartFeedButton = 11;
   static constexpr int kStopFeedButton = 12;
   static constexpr int kStartShooterButton = 1;
   static constexpr int kStopShooterButton = 2;
 
-  const double kElevatorPositionBottom = -0.3; 
-  const double kElevatorPositionMiddle = 2.0;
-  const double kElevatorPositionTop = 3.6;
+  static constexpr int kElevatorPositionButton1 = 7;
+  static constexpr int kElevatorPositionButton2 = 8;
+  static constexpr int kElevatorPositionButton3 = 9;
+  static constexpr int kElevatorPositionButton4 = 10;
+
+  const units::angle::turn_t kElevatorPosition1 = 0.0_tr;
+  const units::angle::turn_t kElevatorPosition2 = 1.0_tr;
+  const units::angle::turn_t kElevatorPosition3 = 2.0_tr;
+  const units::angle::turn_t kElevatorPosition4 = 3.6_tr;
+
 
 };
 
