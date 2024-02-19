@@ -51,6 +51,8 @@ public:
   void TeleopPeriodic() override
   {
 
+      units::angle::turn_t throttleEquation = (0.1135 * m_stick.GetThrottle() + 0.1265)* 1_tr;
+
     double feedMotorPower = frc::Preferences::GetDouble(FeedSpeedKey);
     double shooterMotorPower = frc::Preferences::GetDouble(ShooterSpeedKey);
 
@@ -67,15 +69,19 @@ public:
     bool elevator3 = m_stick.GetRawButton(kElevatorPositionButton3);
     bool elevator4 = m_stick.GetRawButton(kElevatorPositionButton4);
 
+    bool elevatorThrottle = m_stick.GetRawButton(kElevatorPositionThrottleButton);
+
     if (startFeed)
-      m_feedMotor.Set(feedMotorPower); 
+      m_feedMotor.Set(-feedMotorPower); 
     if (stopFeed)
-      m_feedMotor.Set(0);
+      m_feedMotor.Set(0.0);
+
+
 
     if (startShooter)
-      m_shooterMotor.Set(shooterMotorPower);
+      m_shooterMotor.Set(-shooterMotorPower);
     if (stopShooter)
-      m_shooterMotor.Set(0);
+      m_shooterMotor.Set(0.0);
 
     if (elevator1)
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition1).WithSlot(0));
@@ -85,6 +91,9 @@ public:
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition3).WithSlot(0));
     if (elevator4)
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition4).WithSlot(0));
+
+    if (elevatorThrottle)
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(throttleEquation).WithSlot(0));
 
     // ShooterSpeed Button Bindings
     if (m_stick.GetRawButtonPressed(5))
@@ -140,11 +149,13 @@ private:
   static constexpr int kElevatorPositionButton2 = 8;
   static constexpr int kElevatorPositionButton3 = 9;
   static constexpr int kElevatorPositionButton4 = 10;
+  static constexpr int kElevatorPositionThrottleButton = 5;
 
-  const units::angle::turn_t kElevatorPosition1 = 0.0_tr;
-  const units::angle::turn_t kElevatorPosition2 = 1.0_tr;
-  const units::angle::turn_t kElevatorPosition3 = 2.0_tr;
-  const units::angle::turn_t kElevatorPosition4 = 3.6_tr;
+  const units::angle::turn_t kElevatorPosition1 = 0.013_tr;
+  const units::angle::turn_t kElevatorPosition2 = 0.07_tr;
+  const units::angle::turn_t kElevatorPosition3 = 0.15_tr;
+  const units::angle::turn_t kElevatorPosition4 = 0.24_tr;
+
 
 
 };
