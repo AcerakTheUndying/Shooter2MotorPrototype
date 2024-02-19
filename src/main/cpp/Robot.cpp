@@ -45,6 +45,9 @@ public:
     configs::Slot0Configs &slot0 = cfg.Slot0;
     slot0.kP = 20;
 
+    configs::Slot1Configs &slot1 = cfg.Slot1;
+      slot1.kP = 300;
+
     m_initialThrottlePosition = m_stick.GetThrottle();
   }
 
@@ -94,18 +97,18 @@ public:
 
     // Elevator Position Buttons
     if (elevator1)
-      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition1).WithSlot(0));
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition1).WithSlot(1));
     if (elevator2)
-      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition2).WithSlot(0));
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition2).WithSlot(1));
     if (elevator3)
-      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition3).WithSlot(0));
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition3).WithSlot(1));
     if (elevator4)
-      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition4).WithSlot(0));
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition4).WithSlot(1));
 
     // Elevator Throttle Settings
     if (m_initialThrottlePosition != m_stick.GetThrottle())
     {
-      m_elevatorMotor.SetControl(m_mmReq.WithPosition(throttleEquation).WithSlot(0));
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(throttleEquation).WithSlot(1));
     }
 
     // ShooterSpeed Button Bindings
