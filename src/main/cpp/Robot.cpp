@@ -129,9 +129,19 @@ public:
       feedMotorPower -= 0.1;
     frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
 
-  // Trying to sort this out, but it doesn't like the stuff in the brackets of 'OnTrue'
- // frc2::POVButton(&m_stick, 0).OnTrue(topThrottlePosition = m_stick.GetThrottle());
- // frc2::POVButton(&m_stick, 180).OnTrue(bottomThrottlePosition = m_stick.GetThrottle());
+int TopHatDirection = m_stick.GetPOV();
+
+if (TopHatDirection = 90){
+  topThrottlePosition = m_stick.GetThrottle();
+}
+
+if (TopHatDirection = 180){
+  bottomThrottlePosition = m_stick.GetThrottle();
+}
+
+
+
+
   }
 
   /*
