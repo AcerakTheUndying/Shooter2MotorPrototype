@@ -46,8 +46,6 @@ public:
     slot0.kP = 20;
 
     m_initialThrottlePosition = m_stick.GetThrottle();
-
-    
   }
 
   void TeleopInit() override
@@ -58,8 +56,8 @@ public:
   {
     units::angle::turn_t throttleEquation = (0.1135 * m_stick.GetThrottle() + 0.1265) * 1_tr;
 
-  double topThrottlePosition;
-  double bottomThrottlePosition;
+    units::angle::turn_t topThrottlePosition;
+    units::angle::turn_t bottomThrottlePosition = 0_tr;
 
     double feedMotorPower = frc::Preferences::GetDouble(FeedSpeedKey);
     double shooterMotorPower = frc::Preferences::GetDouble(ShooterSpeedKey);
@@ -94,7 +92,7 @@ public:
     if (toggleShooter)
       m_shooterMotor.Set(shooterMotorPower);
 
-    //Elevator Position Buttons
+    // Elevator Position Buttons
     if (elevator1)
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition1).WithSlot(0));
     if (elevator2)
@@ -103,15 +101,12 @@ public:
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition3).WithSlot(0));
     if (elevator4)
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition4).WithSlot(0));
-   
-    //Elevator Throttle Settings
-      if (m_initialThrottlePosition != m_stick.GetThrottle())
+
+    // Elevator Throttle Settings
+    if (m_initialThrottlePosition != m_stick.GetThrottle())
     {
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(throttleEquation).WithSlot(0));
     }
-
-    
-
 
     // ShooterSpeed Button Bindings
     if (m_stick.GetRawButtonPressed(5))
@@ -129,19 +124,17 @@ public:
       feedMotorPower -= 0.1;
     frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
 
-int TopHatDirection = m_stick.GetPOV();
+    int TopHatDirection = m_stick.GetPOV();
 
-if (TopHatDirection = 90){
-  topThrottlePosition = m_stick.GetThrottle();
-}
+    if (TopHatDirection = 0)
+    {
+      topThrottlePosition = units::angle::turn_t(m_elevatorMotor.GetPosition().GetValueAsDouble());
+    }
 
-if (TopHatDirection = 180){
-  bottomThrottlePosition = m_stick.GetThrottle();
-}
-
-
-
-
+    if (TopHatDirection = 180)
+    {
+      bottomThrottlePosition = units::angle::turn_t(m_elevatorMotor.GetPosition().GetValueAsDouble());
+    }
   }
 
   /*
@@ -165,7 +158,6 @@ private:
                                  double DefaultDoubleKeyValue);
 
   frc::Joystick m_stick{0};
-  
 
   ctre::phoenix6::hardware::TalonFX m_shooterMotor{3};
   ctre::phoenix6::hardware::TalonFX m_feedMotor{4};
@@ -188,8 +180,6 @@ private:
   const units::angle::turn_t kElevatorPosition4 = 0.24_tr;
 
   double m_initialThrottlePosition;
-
-
 };
 
 #ifndef RUNNING_FRC_TESTS
