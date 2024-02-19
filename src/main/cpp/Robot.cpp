@@ -12,6 +12,7 @@
 #include <frc2/command/CommandPtr.h>
 #include <numbers>
 #include <frc/Preferences.h>
+#include <frc2/command/button/POVButton.h>
 
 #include <ctre/phoenix6/TalonFX.hpp>
 #include <ctre/phoenix6/configs/Configs.hpp>
@@ -20,9 +21,9 @@
 using namespace ctre::phoenix6;
 
 inline constexpr std::string_view FeedSpeedKey = "Feed Speed";
-double FeedSpeed = 0.5;
+double FeedSpeed = -0.5;
 inline constexpr std::string_view ShooterSpeedKey = "Shooter Speed";
-double ShooterSpeed = 0.7;
+double ShooterSpeed = -0.7;
 
 class Robot : public frc::TimedRobot
 {
@@ -35,23 +36,30 @@ public:
     frc::Preferences::InitDouble(FeedSpeedKey, FeedSpeed);
     frc::Preferences::InitDouble(ShooterSpeedKey, ShooterSpeed);
 
-  configs::TalonFXConfiguration cfg{};
+    configs::TalonFXConfiguration cfg{};
 
-  configs::MotionMagicConfigs &mm = cfg.MotionMagic;
-  mm.MotionMagicCruiseVelocity = 20; // 5 rotations per second cruise
-  mm.MotionMagicAcceleration = 20; // Take approximately 0.5 seconds to reach max vel
+    configs::MotionMagicConfigs &mm = cfg.MotionMagic;
+    mm.MotionMagicCruiseVelocity = 20; // 5 rotations per second cruise
+    mm.MotionMagicAcceleration = 20;   // Take approximately 0.5 seconds to reach max vel
 
-  configs::Slot0Configs &slot0 = cfg.Slot0;
-  slot0.kP = 20;
+    configs::Slot0Configs &slot0 = cfg.Slot0;
+    slot0.kP = 20;
+
+    m_initialThrottlePosition = m_stick.GetThrottle();
+
+    
   }
 
   void TeleopInit() override
-  {}
+  {
+  }
 
   void TeleopPeriodic() override
   {
+    units::angle::turn_t throttleEquation = (0.1135 * m_stick.GetThrottle() + 0.1265) * 1_tr;
 
-      units::angle::turn_t throttleEquation = (0.1135 * m_stick.GetThrottle() + 0.1265)* 1_tr;
+  double topThrottlePosition;
+  double bottomThrottlePosition;
 
     double feedMotorPower = frc::Preferences::GetDouble(FeedSpeedKey);
     double shooterMotorPower = frc::Preferences::GetDouble(ShooterSpeedKey);
@@ -64,25 +72,29 @@ public:
     bool startShooter = m_stick.GetRawButton(kStartShooterButton);
     bool stopShooter = m_stick.GetRawButton(kStopShooterButton);
 
+    bool toggleFeed = true;
+    bool toggleShooter = true;
+
     bool elevator1 = m_stick.GetRawButton(kElevatorPositionButton1);
     bool elevator2 = m_stick.GetRawButton(kElevatorPositionButton2);
     bool elevator3 = m_stick.GetRawButton(kElevatorPositionButton3);
     bool elevator4 = m_stick.GetRawButton(kElevatorPositionButton4);
 
-    bool elevatorThrottle = m_stick.GetRawButton(kElevatorPositionThrottleButton);
-
     if (startFeed)
-      m_feedMotor.Set(-feedMotorPower); 
+      toggleFeed = true;
     if (stopFeed)
-      m_feedMotor.Set(0.0);
-
-
+      toggleFeed = false;
+    if (toggleFeed)
+      m_feedMotor.Set(feedMotorPower);
 
     if (startShooter)
-      m_shooterMotor.Set(-shooterMotorPower);
+      toggleShooter = true;
     if (stopShooter)
-      m_shooterMotor.Set(0.0);
+      toggleShooter = false;
+    if (toggleShooter)
+      m_shooterMotor.Set(shooterMotorPower);
 
+    //Elevator Position Buttons
     if (elevator1)
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition1).WithSlot(0));
     if (elevator2)
@@ -91,9 +103,15 @@ public:
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition3).WithSlot(0));
     if (elevator4)
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition4).WithSlot(0));
-
-    if (elevatorThrottle)
+   
+    //Elevator Throttle Settings
+      if (m_initialThrottlePosition != m_stick.GetThrottle())
+    {
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(throttleEquation).WithSlot(0));
+    }
+
+    
+
 
     // ShooterSpeed Button Bindings
     if (m_stick.GetRawButtonPressed(5))
@@ -103,7 +121,7 @@ public:
       shooterMotorPower -= 0.1;
     frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
 
-  //FeedSpeed Button Bindings
+    // FeedSpeed Button Bindings
     if (m_stick.GetRawButtonPressed(3))
       feedMotorPower += 0.1;
     frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
@@ -111,7 +129,9 @@ public:
       feedMotorPower -= 0.1;
     frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
 
-
+  // Trying to sort this out, but it doesn't like the stuff in the brackets of 'OnTrue'
+ // frc2::POVButton(&m_stick, 0).OnTrue(topThrottlePosition = m_stick.GetThrottle());
+ // frc2::POVButton(&m_stick, 180).OnTrue(bottomThrottlePosition = m_stick.GetThrottle());
   }
 
   /*
@@ -119,7 +139,8 @@ public:
    * robot mode.
    */
   void RobotPeriodic() override
-  {}
+  {
+  }
 
   void CreateDoublePreferenceKey(std::string_view KeyName, int DefaultKeyValue)
   {
@@ -134,8 +155,9 @@ private:
                                  double DefaultDoubleKeyValue);
 
   frc::Joystick m_stick{0};
+  
 
-  ctre::phoenix6::hardware::TalonFX m_shooterMotor{3};  
+  ctre::phoenix6::hardware::TalonFX m_shooterMotor{3};
   ctre::phoenix6::hardware::TalonFX m_feedMotor{4};
   ctre::phoenix6::hardware::TalonFX m_elevatorMotor{5};
   ctre::phoenix6::controls::MotionMagicVoltage m_mmReq{0_tr};
@@ -149,13 +171,13 @@ private:
   static constexpr int kElevatorPositionButton2 = 8;
   static constexpr int kElevatorPositionButton3 = 9;
   static constexpr int kElevatorPositionButton4 = 10;
-  static constexpr int kElevatorPositionThrottleButton = 5;
 
   const units::angle::turn_t kElevatorPosition1 = 0.013_tr;
   const units::angle::turn_t kElevatorPosition2 = 0.07_tr;
   const units::angle::turn_t kElevatorPosition3 = 0.15_tr;
   const units::angle::turn_t kElevatorPosition4 = 0.24_tr;
 
+  double m_initialThrottlePosition;
 
 
 };
