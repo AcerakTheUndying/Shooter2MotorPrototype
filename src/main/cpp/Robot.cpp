@@ -178,11 +178,12 @@ public:
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPositionBottom).WithSlot(1));
       frc::Preferences::SetDouble("Elevator Angle", kElevatorPositionBottom.value());
     }
-    if (m_controller.GetBButton())
+    if (m_controller.GetYButton())
     {
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPositionTop).WithSlot(1));
       frc::Preferences::SetDouble("Elevator Angle", kElevatorPositionTop.value());
     }
+
 
     // int TopHatDirection = m_stick.GetPOV();
   }
@@ -240,3 +241,4 @@ int main()
   return frc::StartRobot<Robot>();
 }
 #endif
+
