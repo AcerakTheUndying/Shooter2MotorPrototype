@@ -14,6 +14,8 @@
 #include <frc/Preferences.h>
 #include <frc2/command/button/POVButton.h>
 
+#include <frc/XboxController.h>
+
 #include <ctre/phoenix6/TalonFX.hpp>
 #include <ctre/phoenix6/configs/Configs.hpp>
 #include <ctre/phoenix6/configs/Configurator.hpp>
@@ -35,20 +37,45 @@ public:
 
     frc::Preferences::InitDouble(FeedSpeedKey, FeedSpeed);
     frc::Preferences::InitDouble(ShooterSpeedKey, ShooterSpeed);
+    frc::Preferences::InitDouble("Elevator Angle", 0.14);
 
     configs::TalonFXConfiguration cfg{};
 
     configs::MotionMagicConfigs &mm = cfg.MotionMagic;
-    mm.MotionMagicCruiseVelocity = 20; // 5 rotations per second cruise
-    mm.MotionMagicAcceleration = 20;   // Take approximately 0.5 seconds to reach max vel
+    mm.MotionMagicCruiseVelocity = 1; // 5 rotations per second cruise
+    mm.MotionMagicAcceleration = 1;   // Take approximately 0.5 seconds to reach max vel
+    m_elevatorMotor.GetConfigurator().Apply(mm);
+
+    // Invert Motor Direction
+    configs::MotorOutputConfigs &motorOutputConfig = cfg.MotorOutput;
+    motorOutputConfig.Inverted = true;
+    m_elevatorMotor.GetConfigurator().Apply(motorOutputConfig);
 
     configs::Slot0Configs &slot0 = cfg.Slot0;
     slot0.kP = 20;
+    // Not sure what this is for.  Not applied to a motor at the moment
 
     configs::Slot1Configs &slot1 = cfg.Slot1;
-      slot1.kP = 300;
+    slot1.kP = 100.0;
+    slot1.kG = 0.56;
+    slot1.kS = 0.144;
+    slot1.kV = 1.0;
+    slot1.kI = 3.0;
+    m_elevatorMotor.GetConfigurator().Apply(slot1);
 
-    m_initialThrottlePosition = m_stick.GetThrottle();
+    /* Setup Remote Cancoder as feedback device*/
+
+    // Create a feedback config object
+    configs::FeedbackConfigs &motorFeedbackConfig = cfg.Feedback;
+    // Using a remote cancoder as the feedback source
+    motorFeedbackConfig.FeedbackSensorSource = ctre::phoenix6::signals::FeedbackSensorSourceValue::RemoteCANcoder;
+    // Cancoder has an ID of 61
+    motorFeedbackConfig.FeedbackRemoteSensorID = 61;
+    // Setup the ratio between the Falcon and Elevator
+    motorFeedbackConfig.RotorToSensorRatio = 30.952381; // Falcon 14:78 x 18:10
+    m_elevatorMotor.GetConfigurator().Apply(motorFeedbackConfig);
+
+    m_previousThrottlePosition = m_stick.GetThrottle();
   }
 
   void TeleopInit() override
@@ -57,10 +84,11 @@ public:
 
   void TeleopPeriodic() override
   {
-    units::angle::turn_t throttleEquation = (0.1135 * m_stick.GetThrottle() + 0.1265) * 1_tr;
 
-    units::angle::turn_t topThrottlePosition;
-    units::angle::turn_t bottomThrottlePosition = 0_tr;
+    units::angle::turn_t throttleEquation = (-0.0665285 * m_stick.GetThrottle() + 0.183472) * 1_tr;
+
+    // units::angle::turn_t topThrottlePosition= 0.25_tr;
+    // units::angle::turn_t bottomThrottlePosition = 0.116943_tr;
 
     double feedMotorPower = frc::Preferences::GetDouble(FeedSpeedKey);
     double shooterMotorPower = frc::Preferences::GetDouble(ShooterSpeedKey);
@@ -73,71 +101,90 @@ public:
     bool startShooter = m_stick.GetRawButton(kStartShooterButton);
     bool stopShooter = m_stick.GetRawButton(kStopShooterButton);
 
-    bool toggleFeed = true;
-    bool toggleShooter = true;
-
-    bool elevator1 = m_stick.GetRawButton(kElevatorPositionButton1);
-    bool elevator2 = m_stick.GetRawButton(kElevatorPositionButton2);
-    bool elevator3 = m_stick.GetRawButton(kElevatorPositionButton3);
-    bool elevator4 = m_stick.GetRawButton(kElevatorPositionButton4);
-
+    //  Stop start feeder
     if (startFeed)
-      toggleFeed = true;
+      m_feedRunning = true;
     if (stopFeed)
-      toggleFeed = false;
-    if (toggleFeed)
-      m_feedMotor.Set(feedMotorPower);
+      m_feedRunning = false;
 
+    if (m_feedRunning)
+      m_feedMotor.Set(-feedMotorPower);
+    else
+      m_feedMotor.Set(0.0);
+
+    // Stop start Shooter
     if (startShooter)
-      toggleShooter = true;
+      m_shooterRunning = true;
     if (stopShooter)
-      toggleShooter = false;
-    if (toggleShooter)
-      m_shooterMotor.Set(shooterMotorPower);
-
-    // Elevator Position Buttons
-    if (elevator1)
-      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition1).WithSlot(1));
-    if (elevator2)
-      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition2).WithSlot(1));
-    if (elevator3)
-      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition3).WithSlot(1));
-    if (elevator4)
-      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPosition4).WithSlot(1));
+      m_shooterRunning = false;
+    if (m_shooterRunning)
+      m_shooterMotor.Set(-shooterMotorPower);
+    else
+      m_shooterMotor.Set(0.0);
 
     // Elevator Throttle Settings
-    if (m_initialThrottlePosition != m_stick.GetThrottle())
+    if (m_stick.GetThrottle() != m_previousThrottlePosition)
     {
       m_elevatorMotor.SetControl(m_mmReq.WithPosition(throttleEquation).WithSlot(1));
+      frc::Preferences::SetDouble("Elevator Angle", throttleEquation.value());
+      m_previousThrottlePosition = m_stick.GetThrottle();
     }
 
     // ShooterSpeed Button Bindings
-    if (m_stick.GetRawButtonPressed(5))
-      shooterMotorPower += 0.1;
-    frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
-    if (m_stick.GetRawButtonPressed(6))
-      shooterMotorPower -= 0.1;
-    frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
-
-    // FeedSpeed Button Bindings
     if (m_stick.GetRawButtonPressed(3))
-      feedMotorPower += 0.1;
-    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    {
+      shooterMotorPower += 0.1;
+      frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    }
     if (m_stick.GetRawButtonPressed(4))
+    {
+      shooterMotorPower -= 0.1;
+      frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    }
+    if (m_stick.GetRawButtonPressed(5))
+    {
+      shooterMotorPower += 0.01;
+      frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    }
+    if (m_stick.GetRawButtonPressed(6))
+    {
+      shooterMotorPower -= 0.01;
+      frc::Preferences::SetDouble(ShooterSpeedKey, shooterMotorPower);
+    }
+    // FeedSpeed Button Bindings
+    if (m_stick.GetRawButtonPressed(7))
+    {
+      feedMotorPower += 0.1;
+      frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    }
+    if (m_stick.GetRawButtonPressed(8))
+    {
       feedMotorPower -= 0.1;
-    frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
-
-    int TopHatDirection = m_stick.GetPOV();
-
-    if (TopHatDirection = 0)
+      frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    }
+    if (m_stick.GetRawButtonPressed(9))
     {
-      topThrottlePosition = units::angle::turn_t(m_elevatorMotor.GetPosition().GetValueAsDouble());
+      feedMotorPower += 0.01;
+      frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
+    }
+    if (m_stick.GetRawButtonPressed(10))
+    {
+      feedMotorPower -= 0.01;
+      frc::Preferences::SetDouble(FeedSpeedKey, feedMotorPower);
     }
 
-    if (TopHatDirection = 180)
+    if (m_controller.GetAButton())
     {
-      bottomThrottlePosition = units::angle::turn_t(m_elevatorMotor.GetPosition().GetValueAsDouble());
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPositionBottom).WithSlot(1));
+      frc::Preferences::SetDouble("Elevator Angle", kElevatorPositionBottom.value());
     }
+    if (m_controller.GetBButton())
+    {
+      m_elevatorMotor.SetControl(m_mmReq.WithPosition(kElevatorPositionTop).WithSlot(1));
+      frc::Preferences::SetDouble("Elevator Angle", kElevatorPositionTop.value());
+    }
+
+    // int TopHatDirection = m_stick.GetPOV();
   }
 
   /*
@@ -162,6 +209,8 @@ private:
 
   frc::Joystick m_stick{0};
 
+  frc::XboxController m_controller{1};
+
   ctre::phoenix6::hardware::TalonFX m_shooterMotor{3};
   ctre::phoenix6::hardware::TalonFX m_feedMotor{4};
   ctre::phoenix6::hardware::TalonFX m_elevatorMotor{5};
@@ -172,17 +221,17 @@ private:
   static constexpr int kStartShooterButton = 1;
   static constexpr int kStopShooterButton = 2;
 
-  static constexpr int kElevatorPositionButton1 = 7;
-  static constexpr int kElevatorPositionButton2 = 8;
-  static constexpr int kElevatorPositionButton3 = 9;
-  static constexpr int kElevatorPositionButton4 = 10;
+  const units::angle::turn_t kElevatorPositionBottom = 0.116943_tr;
 
-  const units::angle::turn_t kElevatorPosition1 = 0.013_tr;
-  const units::angle::turn_t kElevatorPosition2 = 0.07_tr;
-  const units::angle::turn_t kElevatorPosition3 = 0.15_tr;
-  const units::angle::turn_t kElevatorPosition4 = 0.24_tr;
+  const units::angle::turn_t kElevatorPositionTop = 0.25_tr;
 
-  double m_initialThrottlePosition;
+  double m_previousThrottlePosition;
+
+  // Bools to hold the states of the Shooter and Feed System
+  bool m_feedRunning = false;
+  bool m_shooterRunning = false;
+
+  units::angle::turn_t m_currentElevatorAngle;
 };
 
 #ifndef RUNNING_FRC_TESTS
